@@ -47,9 +47,9 @@ dependencies = [
     "langchain==1.0.3",
     "langgraph==1.0.3",
 
-    # Data processing - exact versions from DBR 18 ML
+    # Data processing - compatible versions with DBR 18 ML
     "pandas==2.2.3",
-    "numpy==2.1.3",
+    "numpy>=1.24.0,<3",  # Relaxed for databricks-langchain compatibility
     "scikit-learn==1.6.1",
 
     # Deep Learning & Transformers
