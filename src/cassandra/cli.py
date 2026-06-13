@@ -185,5 +185,286 @@ def test_mlflow(
         raise click.Abort()
 
 
+@main.command()
+@click.option("--table", required=True, help="Unity Catalog table (catalog.schema.table)")
+@click.option("--limit", type=int, default=10, help="Number of rows to preview")
+@click.option("--where", help="SQL WHERE clause (without WHERE keyword)")
+@click.option("--columns", help="Comma-separated columns to display")
+def preview_table(table: str, limit: int, where: str, columns: str) -> None:
+    """Preview Unity Catalog table data.
+
+    Examples:
+
+        \b
+        # Preview first 10 rows
+        cassandra preview-table --table main.default.reviews
+
+        \b
+        # Preview with filter and specific columns
+        cassandra preview-table \\
+            --table main.default.reviews \\
+            --where "rating >= 4" \\
+            --columns "text,rating,label" \\
+            --limit 20
+    """
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+    from cassandra.config import CassandraConfig
+    from cassandra.data import UnityCatalogTables
+
+    console = Console()
+
+    try:
+        # Load config
+        config = CassandraConfig.load()
+
+        # Display config panel
+        console.print(
+            Panel(
+                f"[cyan]Table:[/cyan] {table}\n"
+                f"[cyan]Limit:[/cyan] {limit}\n"
+                f"[cyan]Filter:[/cyan] {where or 'None'}\n"
+                f"[cyan]Columns:[/cyan] {columns or 'All'}",
+                title="Preview Configuration",
+                border_style="cyan",
+                box=box.ROUNDED,
+            )
+        )
+
+        # Parse columns
+        column_list = None
+        if columns:
+            column_list = [c.strip() for c in columns.split(",")]
+
+        # Load data
+        console.print("\n[cyan]Loading data...[/cyan]")
+        tables = UnityCatalogTables(config)
+        df = tables.preview_table(
+            table_name=table,
+            n_rows=limit,
+            columns=column_list,
+            where_clause=where,
+        )
+
+        # Create Rich table
+        rich_table = Table(
+            title=f"Preview: {table}",
+            show_header=True,
+            header_style="bold cyan",
+            box=box.ROUNDED,
+        )
+
+        for col in df.columns:
+            rich_table.add_column(col, overflow="fold", max_width=40)
+
+        for _, row in df.iterrows():
+            # Truncate long values and convert to string
+            values = [str(v)[:100] for v in row]
+            rich_table.add_row(*values)
+
+        console.print("\n")
+        console.print(rich_table)
+        console.print(f"\n[green bold]✓[/green bold] Loaded {len(df)} rows")
+
+    except Exception as e:
+        console.print(f"\n[red bold]Error:[/red bold] {e}")
+        raise click.Abort()
+
+
+@main.command()
+@click.option("--volume", required=True, help="Volume path (/Volumes/catalog/schema/volume)")
+@click.option("--pattern", default="*", help="File pattern (e.g., *.json)")
+@click.option("--recursive/--no-recursive", default=False, help="Search subdirectories")
+def list_volume(volume: str, pattern: str, recursive: bool) -> None:
+    """List files in Unity Catalog volume.
+
+    Examples:
+
+        \b
+        # List all files in volume
+        cassandra list-volume --volume /Volumes/main/default/data
+
+        \b
+        # List JSON files recursively
+        cassandra list-volume \\
+            --volume /Volumes/main/default/data \\
+            --pattern "*.json" \\
+            --recursive
+    """
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+    from cassandra.config import CassandraConfig
+    from cassandra.data import UnityCatalogVolumes
+
+    console = Console()
+
+    try:
+        config = CassandraConfig.load()
+
+        # Display config
+        console.print(
+            Panel(
+                f"[cyan]Volume:[/cyan] {volume}\n"
+                f"[cyan]Pattern:[/cyan] {pattern}\n"
+                f"[cyan]Recursive:[/cyan] {recursive}",
+                title="Volume Listing",
+                border_style="cyan",
+                box=box.ROUNDED,
+            )
+        )
+
+        # List files
+        console.print("\n[cyan]Listing files...[/cyan]")
+        volumes = UnityCatalogVolumes(config)
+        files = volumes.list_files(
+            volume_path=volume,
+            pattern=pattern,
+            recursive=recursive,
+        )
+
+        if not files:
+            console.print(f"\n[yellow]No files found[/yellow]")
+            return
+
+        # Create table
+        rich_table = Table(
+            title=f"Files in {volume}",
+            show_header=True,
+            header_style="bold cyan",
+            box=box.ROUNDED,
+        )
+        rich_table.add_column("Name", style="white")
+        rich_table.add_column("Size", justify="right", style="cyan")
+        rich_table.add_column("Type", style="magenta")
+
+        for file_info in files:
+            name = file_info["path"].split("/")[-1]
+            size = file_info.get("size_bytes", 0)
+            ftype = file_info.get("file_type", "file")
+
+            # Format size
+            if size > 1024**3:
+                size_str = f"{size / 1024**3:.2f} GB"
+            elif size > 1024**2:
+                size_str = f"{size / 1024**2:.2f} MB"
+            elif size > 1024:
+                size_str = f"{size / 1024:.2f} KB"
+            else:
+                size_str = f"{size} B"
+
+            rich_table.add_row(name, size_str, ftype)
+
+        console.print("\n")
+        console.print(rich_table)
+        console.print(f"\n[green bold]✓[/green bold] Found {len(files)} files")
+
+    except Exception as e:
+        console.print(f"\n[red bold]Error:[/red bold] {e}")
+        raise click.Abort()
+
+
+@main.command()
+@click.option("--volume", required=True, help="Volume path (/Volumes/catalog/schema/volume)")
+@click.option("--file", required=True, help="File name or pattern (e.g., data.csv, *.json)")
+@click.option("--limit", type=int, default=10, help="Number of rows to preview")
+@click.option(
+    "--format",
+    type=click.Choice(["csv", "json", "parquet", "text"]),
+    help="Force format (auto-detected if omitted)",
+)
+def preview_volume(volume: str, file: str, limit: int, format: str) -> None:
+    """Preview Unity Catalog volume file data.
+
+    Examples:
+
+        \b
+        # Preview specific file
+        cassandra preview-volume \\
+            --volume /Volumes/main/default/data \\
+            --file cassandra.csv \\
+            --limit 10
+
+        \b
+        # Auto-detect format
+        cassandra preview-volume \\
+            --volume /Volumes/main/default/data \\
+            --file data.parquet
+
+        \b
+        # Force format
+        cassandra preview-volume \\
+            --volume /Volumes/catalog/schema/volume \\
+            --file data.txt \\
+            --format text \\
+            --limit 20
+    """
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+    from cassandra.config import CassandraConfig
+    from cassandra.data import UnityCatalogVolumes
+
+    console = Console()
+
+    try:
+        # Load config
+        config = CassandraConfig.load()
+
+        # Detect format for display
+        format_display = format if format else "auto-detected"
+
+        # Display config panel
+        console.print(
+            Panel(
+                f"[cyan]Volume:[/cyan] {volume}\n"
+                f"[cyan]File:[/cyan] {file}\n"
+                f"[cyan]Format:[/cyan] {format_display}\n"
+                f"[cyan]Limit:[/cyan] {limit}",
+                title="Preview Configuration",
+                border_style="cyan",
+                box=box.ROUNDED,
+            )
+        )
+
+        # Load data
+        console.print("\n[cyan]Loading data...[/cyan]")
+        volumes = UnityCatalogVolumes(config)
+        df = volumes.preview_file(
+            volume_path=volume,
+            filename=file,
+            n_rows=limit,
+            file_format=format,
+        )
+
+        # Create Rich table
+        rich_table = Table(
+            title=f"Preview: {file}",
+            show_header=True,
+            header_style="bold cyan",
+            box=box.ROUNDED,
+        )
+
+        for col in df.columns:
+            rich_table.add_column(col, overflow="fold", max_width=40)
+
+        for _, row in df.iterrows():
+            # Truncate long values and convert to string
+            values = [str(v)[:100] for v in row]
+            rich_table.add_row(*values)
+
+        console.print("\n")
+        console.print(rich_table)
+        console.print(f"\n[green bold]✓[/green bold] Loaded {len(df)} rows")
+
+    except Exception as e:
+        console.print(f"\n[red bold]Error:[/red bold] {e}")
+        raise click.Abort()
+
+
 if __name__ == "__main__":
     main()

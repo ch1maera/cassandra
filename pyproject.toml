@@ -61,6 +61,7 @@ dependencies = [
     "databricks-sdk>=0.40.0",
     "databricks-langchain>=0.15.0",
     "unitycatalog-langchain>=0.2.0",
+    "databricks-sql-connector>=3.0.0",
     # CLI and utilities
     "click>=8.1.0",
     "rich>=13.0.0",
