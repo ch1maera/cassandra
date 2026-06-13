@@ -42,36 +42,36 @@ classifiers = [
 dependencies = [
     # MLflow - exact version from DBR 18 ML
     "mlflow-skinny==3.8.1",
-
     # LangChain ecosystem - exact versions from DBR 18 ML
     "langchain==1.0.3",
     "langgraph==1.0.3",
-
     # Data processing - compatible versions with DBR 18 ML
     "pandas==2.2.3",
     "numpy>=1.24.0,<3",  # Relaxed for databricks-langchain compatibility
     "scikit-learn==1.6.1",
-
     # Deep Learning & Transformers
     "torch>=2.0.0",
     "transformers>=4.35.0",
     "datasets>=2.14.0",
     "accelerate>=0.24.0",
-
     # Hyperparameter Optimization
     "optuna>=3.4.0",
     "ray[tune]>=2.8.0",
-
     # Databricks ecosystem
     "databricks-sdk>=0.40.0",
     "databricks-langchain>=0.15.0",
     "unitycatalog-langchain>=0.2.0",
-
     # CLI and utilities
     "click>=8.1.0",
     "rich>=13.0.0",
     "pydantic>=2.0.0",
     "pyyaml>=6.0.0",
+    "prophet>=1.3.0",
+    "statsmodels>=0.14.6",
+    "seaborn>=0.13.2",
+    "scipy>=1.17.1",
+    "matplotlib>=3.10.9",
+    "mlflow>=3.8.1",
 ]
 
 [project.optional-dependencies]
@@ -85,6 +85,15 @@ dev = [
     "mypy>=1.4.1",
     "types-pyyaml>=6.0.12",
     "types-requests>=2.31.0",
+]
+
+# Time series models for MLflow integration testing
+timeseries = [
+    "prophet>=1.1.0",
+    "statsmodels>=0.14.0",
+    "seaborn>=0.12.0",
+    "scipy>=1.11.0",
+    "matplotlib>=3.7.0",
 ]
 
 # GPU support with optimized libraries
@@ -118,7 +127,7 @@ docs = [
 
 # All optional dependencies
 all = [
-    "cassandra-automl[dev,gpu,mlflow-full,docs]",
+    "cassandra-automl[dev,gpu,mlflow-full,timeseries,docs]",
 ]
 
 [project.scripts]
@@ -219,6 +228,11 @@ module = [
     "langgraph.*",
     "databricks.*",
     "mlflow.*",
+    "prophet.*",
+    "statsmodels.*",
+    "seaborn.*",
+    "matplotlib.*",
+    "scipy.*",
 ]
 ignore_missing_imports = true
 
@@ -274,3 +288,9 @@ exclude_lines = [
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+]

@@ -6,7 +6,7 @@ AI Gateway settings, and YAML persistence.
 
 from pydantic import BaseModel, Field, field_validator
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 import yaml
 import os
 
@@ -41,6 +41,20 @@ class CassandraConfig(BaseModel):
         default="https://lakebase-prod.cloud.databricks.com"
     )
     lakebase_namespace: str = Field(default="cassandra")
+
+    # MLflow Configuration
+    mlflow_tracking_uri: str = Field(
+        default="databricks",
+        description="MLflow tracking URI (databricks for workspace)",
+    )
+    mlflow_experiment_location: Literal["personal", "shared"] = Field(
+        default="personal",
+        description="Experiment location: personal (/Users/{user}/...) or shared (/Shared/...)",
+    )
+    databricks_username: Optional[str] = Field(
+        default=None,
+        description="Databricks username for personal experiment paths (auto-detected if not set)",
+    )
 
     @field_validator("temperature")
     @classmethod
@@ -95,6 +109,9 @@ class CassandraConfig(BaseModel):
             "ai_endpoint": os.getenv("CASSANDRA_AI_ENDPOINT"),
             "temperature": os.getenv("CASSANDRA_TEMPERATURE"),
             "max_tokens": os.getenv("CASSANDRA_MAX_TOKENS"),
+            "mlflow_tracking_uri": os.getenv("MLFLOW_TRACKING_URI"),
+            "mlflow_experiment_location": os.getenv("CASSANDRA_MLFLOW_LOCATION"),
+            "databricks_username": os.getenv("DATABRICKS_USERNAME"),
         }
 
         # Apply non-None overrides
@@ -154,3 +171,36 @@ class CassandraConfig(BaseModel):
         # Load profile from ~/.databrickscfg
         config = Config(profile=self.databricks_profile)
         return WorkspaceClient(config=config)
+
+    def get_mlflow_experiment_path(self, experiment_name: str) -> str:
+        """Generate MLflow experiment path based on location setting.
+
+        Args:
+            experiment_name: Name of the experiment
+
+        Returns:
+            Full experiment path:
+            - Personal: /Users/{username}/cassandra-experiments/{experiment_name}
+            - Shared: /Shared/cassandra-experiments/{experiment_name}
+
+        Raises:
+            ValueError: If username cannot be determined for personal location
+        """
+        if self.mlflow_experiment_location == "shared":
+            return f"/Shared/cassandra-experiments/{experiment_name}"
+
+        # Personal location - need username
+        username = self.databricks_username
+        if not username:
+            # Auto-detect from Databricks client
+            try:
+                client = self.get_databricks_client()
+                user = client.current_user.me()
+                username = user.user_name
+            except Exception as e:
+                raise ValueError(
+                    "Cannot determine Databricks username for personal experiment path. "
+                    "Set databricks_username in config or DATABRICKS_USERNAME env var."
+                ) from e
+
+        return f"/Users/{username}/cassandra-experiments/{experiment_name}"

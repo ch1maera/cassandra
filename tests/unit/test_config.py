@@ -19,6 +19,9 @@ def test_config_defaults():
     assert config.max_tokens == 4096
     assert config.lakebase_endpoint_url == "https://lakebase-prod.cloud.databricks.com"
     assert config.lakebase_namespace == "cassandra"
+    assert config.mlflow_tracking_uri == "databricks"
+    assert config.mlflow_experiment_location == "personal"
+    assert config.databricks_username is None
 
 
 def test_config_is_configured():
@@ -179,3 +182,51 @@ def test_config_exclude_none_in_save(tmp_path, monkeypatch):
     assert "databricks_host" not in data
     assert data["databricks_profile"] == "test-profile"
     assert data["warehouse_id"] == "test-warehouse"
+
+
+def test_config_mlflow_experiment_path_shared():
+    """Test MLflow experiment path generation for shared location."""
+    config = CassandraConfig(mlflow_experiment_location="shared")
+    path = config.get_mlflow_experiment_path("test-experiment")
+    assert path == "/Shared/cassandra-experiments/test-experiment"
+
+
+def test_config_mlflow_experiment_path_personal_with_username():
+    """Test MLflow experiment path generation for personal location with username."""
+    config = CassandraConfig(
+        mlflow_experiment_location="personal",
+        databricks_username="user@example.com",
+    )
+    path = config.get_mlflow_experiment_path("test-experiment")
+    assert path == "/Users/user@example.com/cassandra-experiments/test-experiment"
+
+
+def test_config_mlflow_experiment_path_personal_no_username():
+    """Test MLflow experiment path generation fails without username."""
+    config = CassandraConfig(mlflow_experiment_location="personal")
+    with pytest.raises(ValueError, match="Cannot determine Databricks username"):
+        config.get_mlflow_experiment_path("test-experiment")
+
+
+def test_config_mlflow_env_overrides(tmp_path, monkeypatch):
+    """Test MLflow environment variable overrides."""
+    test_config = tmp_path / "config.yaml"
+    monkeypatch.setattr(CassandraConfig, "config_path", classmethod(lambda cls: test_config))
+
+    # Save initial config
+    config = CassandraConfig(
+        mlflow_tracking_uri="databricks",
+        mlflow_experiment_location="personal",
+    )
+    config.save()
+
+    # Set environment variables
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+    monkeypatch.setenv("CASSANDRA_MLFLOW_LOCATION", "shared")
+    monkeypatch.setenv("DATABRICKS_USERNAME", "env-user@example.com")
+
+    # Load config - env vars should override YAML
+    loaded = CassandraConfig.load()
+    assert loaded.mlflow_tracking_uri == "http://localhost:5000"
+    assert loaded.mlflow_experiment_location == "shared"
+    assert loaded.databricks_username == "env-user@example.com"
