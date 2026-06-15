@@ -30,7 +30,7 @@ class CassandraConfig(BaseModel):
 
     # AI Gateway
     ai_endpoint: str = Field(
-        default="databricks-claude-3-5-sonnet",
+        default="databricks-claude-sonnet-4-6",
         description="Unity AI Gateway endpoint name",
     )
     temperature: float = Field(default=0.7)

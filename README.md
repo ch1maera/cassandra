@@ -88,7 +88,7 @@ pip install -e ".[dev]"
    export DATABRICKS_TOKEN="dapi..."
    export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
    ```
-3. **AI Gateway Endpoint**: Create or access a Unity AI Gateway endpoint (e.g., `databricks-claude-3-5-sonnet`)
+3. **AI Gateway Endpoint**: Create or access a Unity AI Gateway endpoint (e.g., `databricks-claude-sonnet-4-6`)
 
 ### Basic Usage
 
@@ -145,7 +145,7 @@ Example interaction:
 cassandra config show
 
 # Set default AI Gateway endpoint
-cassandra config set ai.endpoint "databricks-claude-3-5-sonnet"
+cassandra config set ai.endpoint "databricks-claude-sonnet-4-6"
 
 # Set HPO engine preference
 cassandra config set hpo.engine "optuna"  # or "ray"
@@ -167,7 +167,7 @@ cassandra train \
   --distributed \
   --num-workers 4 \
   --gpus-per-trial 4 \
-  --ai-endpoint "databricks-claude-3-5-sonnet" \
+  --ai-endpoint "databricks-claude-sonnet-4-6" \
   --lakebase-endpoint "lakebase-prod" \
   --session-id "roberta_ner_2024" \
   --resume \
@@ -188,7 +188,7 @@ export DATABRICKS_TOKEN="dapi..."
 export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
 
 # Unity AI Gateway
-export DATABRICKS_AI_GATEWAY_ENDPOINT="databricks-claude-3-5-sonnet"
+export DATABRICKS_AI_GATEWAY_ENDPOINT="databricks-claude-sonnet-4-6"
 
 # Lakebase Configuration
 export LAKEBASE_ENDPOINT_URL="https://lakebase-prod.cloud.databricks.com"
@@ -213,7 +213,7 @@ databricks:
   warehouse_id: "your-warehouse-id"
 
 ai_gateway:
-  endpoint: "databricks-claude-3-5-sonnet"
+  endpoint: "databricks-claude-sonnet-4-6"
   temperature: 0.7
   max_tokens: 4096
 
@@ -380,39 +380,7 @@ pytest -m "not slow"
 
 ## Roadmap
 
-### Phase 1: Core Training Infrastructure (Current)
-- [x] HuggingFace Transformers integration
-- [x] Optuna HPO for single-node optimization
-- [x] Ray Tune HPO for distributed trials
-- [x] TorchDistributor for multi-GPU/multi-node training
-- [x] LangGraph agentic workflow with dual-memory system
-- [x] Unity AI Gateway and MLflow tracing
-- [x] CLI with train and interactive commands
-- [ ] Advanced training strategies (LoRA, QLoRA, mixed precision)
-- [ ] Model checkpointing and resumption
-- [ ] Gradient accumulation and optimization
-
-### Phase 2: Expanded Model Support
-- [ ] Multi-modal models (CLIP, LLaVA, etc.)
-- [ ] Encoder-decoder architectures (T5, BART)
-- [ ] Generative models (GPT variants, Llama)
-- [ ] Efficient fine-tuning (Adapters, IA³, Prompt tuning)
-- [ ] Model quantization and compression
-
-### Phase 3: Advanced HPO & Optimization
-- [ ] Multi-objective optimization (Pareto frontiers)
-- [ ] Population-based training (PBT)
-- [ ] Evolutionary strategies
-- [ ] Neural architecture search (NAS)
-- [ ] Automated data augmentation
-
-### Phase 4: Production & Deployment
-- [ ] Model explainability (SHAP, attention visualization)
-- [ ] A/B testing framework for model comparison
-- [ ] Online learning and continuous training
-- [ ] Model serving integration (Databricks Model Serving)
-- [ ] Model monitoring and drift detection
-- [ ] Cost optimization (spot instances, auto-scaling)
+See [docs/ROADMAP.md](docs/ROADMAP.md) for planned phases and future work.
 
 ## Contributing
 
