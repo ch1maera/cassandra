@@ -14,7 +14,7 @@ def test_config_defaults():
     assert config.databricks_profile == "DEFAULT"
     assert config.databricks_host is None
     assert config.warehouse_id == ""
-    assert config.ai_endpoint == "databricks-claude-3-5-sonnet"
+    assert config.ai_endpoint == "databricks-claude-sonnet-4-6"
     assert config.temperature == 0.7
     assert config.max_tokens == 4096
     assert config.lakebase_endpoint_url == "https://lakebase-prod.cloud.databricks.com"
@@ -95,7 +95,7 @@ def test_config_load_nonexistent(tmp_path, monkeypatch):
 
     config = CassandraConfig.load()
     assert config.databricks_profile == "DEFAULT"
-    assert config.ai_endpoint == "databricks-claude-3-5-sonnet"
+    assert config.ai_endpoint == "databricks-claude-sonnet-4-6"
 
 
 def test_config_env_overrides(tmp_path, monkeypatch):

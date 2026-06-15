@@ -334,4 +334,3 @@ class InteractiveCLI:
             self.console.print("\n\n[bold cyan]Interrupted. Goodbye! 👋[/bold cyan]\n")
         except Exception as e:
             self.console.print(f"\n[bold red]Error: {e}[/bold red]\n")
-            raise

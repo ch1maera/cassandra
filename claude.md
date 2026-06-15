@@ -164,14 +164,14 @@ from langchain_community.chat_models import ChatDatabricks
 
 # Initialize with Unity AI Gateway endpoint
 llm = ChatDatabricks(
-    endpoint="databricks-claude-3-5-sonnet",
+    endpoint="databricks-claude-sonnet-4-6",
     temperature=0.7,
     max_tokens=4096,
 )
 
 # Hot-swap to different model
-llm_haiku = ChatDatabricks(endpoint="databricks-claude-3-5-haiku")
-llm_opus = ChatDatabricks(endpoint="databricks-claude-opus-4")
+llm_haiku = ChatDatabricks(endpoint="databricks-claude-haiku-4-5")
+llm_opus = ChatDatabricks(endpoint="databricks-claude-opus-4-8")
 
 # Use in LangChain chains
 from langchain.chains import LLMChain
@@ -535,7 +535,7 @@ class CassandraConfig(BaseModel):
     warehouse_id: str = Field(default_factory=lambda: os.getenv("DATABRICKS_WAREHOUSE_ID"))
 
     # AI Gateway
-    ai_endpoint: str = Field(default="databricks-claude-3-5-sonnet")
+    ai_endpoint: str = Field(default="databricks-claude-sonnet-4-6")
     temperature: float = Field(default=0.7)
     max_tokens: int = Field(default=4096)
 
@@ -828,7 +828,7 @@ logger.info("Loading data", extra={"table": table_name, "session_id": session_id
 
 ### Unity AI Gateway
 
-- **Endpoint**: `databricks-claude-3-5-sonnet` (or custom)
+- **Endpoint**: `databricks-claude-sonnet-4-6` (or custom)
 - **Authentication**: Via `DATABRICKS_TOKEN`
 - **Rate Limits**: Handled by gateway
 - **Tracing**: Automatic via `mlflow.langchain.autolog()`
